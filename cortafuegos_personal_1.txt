@@ -1,0 +1,48 @@
+#Configuración de cortafuegos personal
+
+#Limpio iptables
+iptables -F
+iptables -t nat -F
+
+#Listo las reglas
+iptables -L -nv
+
+#Establezco política por defecto DROP
+iptables -P OUTPUT DROP
+iptables -P INPUT DROP
+
+#Compruebo que no tengo conectividad
+ping -c 3 192.168.1.1 (con mi puerta de enlace)
+#permito que se haga ping
+iptables -A OUTPUT -o ens33 -p icmp -j ACCEPT
+
+# si sólo pongo la regla OUTPUT no recibiré la respuesta, tendrá que ir asocia
+# a una regla INPUT
+
+iptables -A INPUT -i ens33 -p icmp -j ACCEPT
+
+# si hago ping a mi propia máquina localhost no me deja, por eso siempre se añaden
+# estas dos reglas.
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# Habilito las consultas DNS
+# Si consultamos nuestro DNS con el comando dig o mostrando el fichero /etc/resolv.conf
+y vemos que es local, por las reglas anteriores lo permitirá. Vamos a aceptar peticiones
+DNS de 1.1.1.1 o 8.8.8.8
+
+iptables -A OUTPUT -o ens33 -d 1.1.1.1 -p udp --dport 53 -j ACCEPT
+iptables -A INPUT -i ens33 -s 1.1.1.1 -p udp --sport 53 -j ACCEPT
+
+#Compruebo
+
+dig @1.1.1.1 www.google.es
+
+# Habilito el tráfico web (80 y 443)
+iptables -A OUTPUT -o ens33 -p tcp --dport 80 -j ACCEPT
+iptables -A INPUT -i ens33 -p tcp --sport 80 -j ACCEPT
+
+iptables -A OUTPUT -o ens33 -p tcp --dport 443 -j ACCEPT
+iptables -A INPUT -i ens33 -p tcp --sport 443 -j ACCEPT
+
+#Comprobamos que podemos navegar por la web
