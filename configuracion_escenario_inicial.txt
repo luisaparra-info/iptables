@@ -1,0 +1,135 @@
+VIRTUALIZACIÓN EN VMWare Fusion
+#############
+SERVER - DMZ
+#############
+S.O.: Lubuntu (64 bits)
+Adaptador de red: "Privado para mi Mac": Cuando se usa este tipo de conexión de red,
+la máquina virtual está conectada al sistema operativo de su Mac por una red privada virtual,
+que normalmente no es visible desde fuera de su Mac.
+Si hay varias máquinas virtuales configuradas con redes solo host en el mismo Mac,
+todas estarán en la misma red.
+
+
+IP: 192.168.200.2/24
+GW: 192.168.200.1/24
+DNS: 8.8.8.8
+
+Deshabilitamos el cortafuergos
+#ufw disable
+
+Instalamos apache
+#apt update
+#apt install apache2
+
+Comprobamos el servidor
+#systemctl status apache2
+Otros comandos útiles en apache:
+Detener servicio: systemctl stop apache2
+Iniciar servicio: systemctl start apache2
+Reiniciar servicio: systemctl restart apache2
+Recargar sin cerrar conexiones:  systemctl reload apache2
+
+Creamos nuestro sitio virtual
+# mkdir /var/www/miweb.com
+# chown -R $USER:$USER /var/www/miweb.com
+# chmod -R 755 /var/www/miweb.com
+# nano /var/www/miweb.com/index.html
+
+<html>
+    <head>
+        <title>Bienvenid@s a mi web</title>
+    </head>
+    <body>
+        <h1>Perfecto! El dominio funciona</h1>
+    </body>
+</html>
+
+# nano /etc/apache2/sites-available/your_domain.conf
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+    ServerName miweb.com
+    ServerAlias www.miweb.com
+    DocumentRoot /var/www/miweb.com
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+
+# a2ensite your_domain.conf
+# a2dissite 000-default.conf
+
+Reiniciamos servicio apache2
+# systemctl restart apache2
+# apache2ctl configtest
+
+Configuramos el /etc/hosts añadiendo dos entradas
+# nano /etc/hosts
+
+192.168.200.2 miweb.com
+192.168.200.2 www.miweb.com
+
+Probamos en el navegador y con el comando ping que resuelve bien en nombre
+
+######################
+CONFIGURACIÓN FIREWALL
+######################
+S.O.: Lubuntu (64 bits)
+
+Adaptador de red1: "Compartir con mi Mac" (Como modo puente)
+Nombre de la interfaz: ens33
+
+Adaptador de red2: "Privado para mi Mac"
+Nombre de la interfaz: ens38
+IP: 192.168.100.1/24
+GW: -
+DNS: -
+Adaptador de red3: "Privado para mi Mac"
+Nombre de la interfaz: ens39
+IP: 192.168.200.1/24
+GW: -
+DNS: -
+
+Deshabilitamos el cortafuergos
+#ufw disable
+
+Para que la máquina de la LAN y del DMZ tengan internet hay
+que hacer una regla nat, para ellos tenemos que hacer lo siguiente:
+Editamos el fichero /etc/sysctl.conf
+Descomentar la línea:
+net.ipv4.ip_forward=1
+
+Listamos las reglas iptables para nat:
+# iptables -t nat -L -n
+
+Añadimos la nueva regla:
+
+# iptables -t nat -A POSTROUITING -o ens33 -j MASQUEREADE
+
+Comprobamos que tenemos internet en las máquinas creadas
+
+Configuramos el /etc/hosts añadiendo dos entradas
+# nano /etc/hosts
+
+192.168.200.2 miweb.com
+192.168.200.2 www.miweb.com
+
+#######################
+CONFIGURACIÓN PC - LAN
+#######################
+S.O.: Lubuntu (64 bits)
+Adaptador de red: "Privado para mi Mac"
+
+
+IP: 192.168.100.2/24
+GW: 192.168.100.1/24
+DNS: 8.8.8.8
+
+Deshabilitamos el cortafuergos
+#ufw disable
+
+Configuramos el /etc/hosts añadiendo dos entradas
+# nano /etc/hosts
+
+192.168.200.2 miweb.com
+192.168.200.2 www.miweb.com
+
+Probamos en el navegador y con el comando ping que resuelve bien en nombre
