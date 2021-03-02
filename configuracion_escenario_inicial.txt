@@ -102,7 +102,10 @@ Listamos las reglas iptables para nat:
 
 Añadimos la nueva regla:
 
-# iptables -t nat -A POSTROUITING -o ens33 -j MASQUEREADE
+# iptables -t nat -A POSTROUITING -o ens33 -j MASQUERADE
+
+Para que sea permanente y no se elimine al reiniciar, tendremos varias opciones
+que ya veremos.
 
 Comprobamos que tenemos internet en las máquinas creadas
 

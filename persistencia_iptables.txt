@@ -1,0 +1,52 @@
+Si no hacemos nada, al reiniciar el equipo la configuración de las iptables se pierde,
+para eso tenemos varias opciones:
+
+OPCIÓN 1:
+En lugar de ir escribiendo una a una las reglas de iptables en la línea de comandos,
+lo que hacemos en este caso es escribirlas en un fichero y ejecutarlo como un script
+en el arranque del equipo.
+
+Ubicamos este fichero de script en un directorio adecuado y le damos permisos de ejecución, por ejemplo:
+
+/usr/local/bin/iptables.sh
+chmod +x /usr/local/bin/iptables.sh
+
+OPCIÓN 2:
+Vamos creando las reglas en el equipo, añadiendo y modificando lo que sea necesario,
+hasta que la configuración sea la deseada. Una vez que la configuración sea la que queremos,
+la guardamos con ayuda de iptables-save en un fichero (típicamente algo como /etc/iptables/rules.v4,
+aunque no hay ubicación por defecto):
+
+iptables-save > /etc/iptables/rules.v4
+Ejecutar las reglas de iptables almacenadas con iptables-save se realiza mediante iptables-restore,
+que también tendrá que ser ejecutado en el arranque del equipo:
+
+iptables-restore /etc/iptables/rules.v4
+
+AUTOMATIZACIÓN EN EL ARRANQUE:
+
+La tarea de ejecutar el script o el iptables-restore, es necesario que sea automático, para ello
+también contamos con dos opciones:
+
+- Crontab con la cabecera @reboot
+
+- Creando un servicio
+Creamos el fichero iptables.service en el directorio /etc/systemd/system, con el siguiente contenido:
+
+[Unit]
+Description=Reglas de iptables
+After=systemd-sysctl.service
+
+[Service]
+Type=oneshot
+(OPCIÓN 1)ExecStart=/usr/local/bin/iptables.sh
+(OPCIÓN 2)ExecStart=/sbin/iptables-restore /etc/iptables/rules.v4
+
+
+[Install]
+WantedBy=multi-user.target
+
+Tendremos que habilitar la unidad anterior para que se ejecute la próxima vez y si queremos en este momento arrancarla:
+
+systemctl enable iptables.service
+systemctl start iptables.service
