@@ -4,7 +4,11 @@
 iptables -F
 iptables -t nat -F
 
-#Listo las reglas
+#Puesta de contadores a 0
+iptables -Z
+iptables -t nat -Z
+
+#Listo las reglas filter
 iptables -L -nv
 
 #Establezco política por defecto DROP
@@ -12,11 +16,11 @@ iptables -P OUTPUT DROP
 iptables -P INPUT DROP
 
 #Compruebo que no tengo conectividad
-ping -c 3 192.168.1.1 (con mi puerta de enlace)
+ping -c 3 192.168.X.X (con mi puerta de enlace)
 #permito que se haga ping
 iptables -A OUTPUT -o ens33 -p icmp -j ACCEPT
 
-# si sólo pongo la regla OUTPUT no recibiré la respuesta, tendrá que ir asocia
+# si sólo pongo la regla OUTPUT no recibiré la respuesta, tendrá que ir asociada
 # a una regla INPUT
 
 iptables -A INPUT -i ens33 -p icmp -j ACCEPT
