@@ -1,10 +1,20 @@
+Mostrar reglas:
+iptables -L [chain] -nv
+
+Mostrar reglas con número de línea:
+iptables -L [chain] -n --line-numbers
+
+Eliminar reglas:
+iptables -D [chain] [num]
+
+
 Protocolo ICMP
-Limitamos al ping las peticiones y respuestas que se aceptan desde el equipo del cortafuegos al exterior:
+Limitamos al ping las peticiones y respuestas que se aceptan desde el equipo del cortafuegos al exterior (tendríamos que quitar las que tenemos antes):
 
 iptables -A OUTPUT -o ens33 -p icmp -m icmp --icmp-type echo-request -j ACCEPT
 iptables -A INPUT -i ens33 -p icmp -m icmp --icmp-type echo-reply -j ACCEPT
 
-Entre las dos redes también limitamos el ICMP a las peticiones y respuestas de ping:
+Entre las dos redes también limitamos el ICMP a las peticiones y respuestas de ping (tendríamos que quitar las que tenemos antes):
 
 iptables -A FORWARD -i ens38 -o ens39 -p icmp -m icmp --icmp-type echo-request -j ACCEPT
 iptables -A FORWARD -o ens38 -i ens39 -p icmp -m icmp --icmp-type echo-reply -j ACCEPT
@@ -13,13 +23,13 @@ iptables -A FORWARD -o ens39 -i ens38 -p icmp -m icmp --icmp-type echo-reply -j 
 
 Límite de conexiones simultáneas desde el exterior
 Limitamos a dos conexiones simultáneas al servidor de correo, pero a
-15 al servidor web:
+15 al servidor web ( -I para que queden por encima de las reglas menos restrictivas) :
 
-iptables -A FORWARD -i ens33 -o ens39 -p tcp --syn --dport 25 \
+iptables -I FORWARD -i ens33 -o ens39 -p tcp --syn --dport 25 \
 -m connlimit --connlimit-above 2 -j REJECT --reject-with tcp-reset
-iptables -A FORWARD -i ens33 -o ens39 -p tcp --syn --dport 80 \
+iptables -I FORWARD -i ens33 -o ens39 -p tcp --syn --dport 80 \
 -m connlimit --connlimit-above 15 -j REJECT --reject-with tcp-reset
-iptables -A FORWARD -i ens33 -o ens39 -p tcp --syn --dport 443 \
+iptables -I FORWARD -i ens33 -o ens39 -p tcp --syn --dport 443 \
 -m connlimit --connlimit-above 15 -j REJECT --reject-with tcp-reset
 
 Multiports
@@ -35,7 +45,7 @@ iptables -A FORWARD -i ens39 -s 192.168.200.2/32 -p tcp -m multiport --dports 10
 Permitir conexión a Internet desde la DMZ a una hora concreta
 Los equipos de la DMZ no pueden conectarse a Internet, esto es una consideración de seguridad básica, para limitar el alcance de un eventual ataque, 
 pero también es necesario que esos equipos puedan conectarse a Internet para realizar las actualizaciones de seguridad. 
-Una solución a este problema es limitar el acceso a Internet a unos determinados equipos y a hacerlo a una hora determinada:
+Una solución a este problema es limitar el acceso a Internet a unos determinados equipos y a hacerlo a una hora determinada (borramos las reglas más permisivas):
 
 iptables -A FORWARD -i ens39 -o ens33 -p udp --dport 53 -m multiport \
 --sports 1024:65535 -s 192.168.200.0/24  -m time \
@@ -56,5 +66,5 @@ iptables -A FORWARD -o ens39 -i ens33 -p tcp --sport 443 -m multiport \
 --dports 1024:65535 -d 192.168.200.0/24  -m time \
 --timestart 12:00 --timestop 12:30 -j ACCEPT
 
-iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -o br0 -m time \
+iptables -t nat -A POSTROUTING -s 192.168.200.0/24 -o ens33 -m time \
 --timestart 12:00 --timestop 12:30 -j MASQUERADE
